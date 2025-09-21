@@ -3,7 +3,7 @@
 class CartService
   class CartNotFoundError < StandardError; end
   class ProductNotFoundError < StandardError; end
-  class ProductNotInCartError < StandardError; end
+  class InvalidQuantityError < StandardError; end
 
   def add_product_to_cart(session, product_id, quantity)
     product = find_product!(product_id)
@@ -17,6 +17,19 @@ class CartService
     Result.failure(error)
   end
 
+  def update_product_quantity(session, product_id, quantity)
+    validate_quantity!(quantity)
+
+    product = find_product!(product_id)
+    cart = find_or_create_cart(session)
+    
+    set_cart_item_quantity(cart, product, quantity)
+    
+    cart.reload
+    Result.success(cart)
+  rescue => error
+    Result.failure(error)
+  end
 
   def get_current_cart(session)
     cart = find_current_cart(session)
@@ -61,6 +74,18 @@ class CartService
     else
       cart.cart_items.create!(product: product, quantity: quantity)
     end
+  end
+
+  def validate_quantity!(quantity)
+    raise InvalidQuantityError, 'Quantity must be greater than 0' if quantity <= 0
+  end
+
+  def set_cart_item_quantity(cart, product, quantity)
+    existing_item = cart.cart_items.find_or_create_by(product: product)
+
+    new_quantity = existing_item.quantity + quantity
+
+    existing_item.update!(quantity: new_quantity)
   end
 
   def session_manager

@@ -18,7 +18,13 @@ class CartsController < ApplicationController
 
   # POST /cart/add_item
   def add_item
-    # 
+    result = cart_service.update_product_quantity(
+      session,
+      params[:product_id],
+      params[:quantity].to_i
+    )
+
+    handle_result(result)
   end
 
   # DELETE /cart/:product_id
@@ -44,10 +50,6 @@ class CartsController < ApplicationController
       render json: { error: error.message }, status: :not_found
     when CartService::CartNotFoundError
       render json: { error: error.message }, status: :not_found
-    when CartService::ProductNotInCartError
-      render json: { error: error.message }, status: :not_found
-    when CartService::InvalidQuantityError
-      render json: { error: error.message }, status: :unprocessable_entity
     else
       render json: { error: error.message }, status: :unprocessable_entity
     end
