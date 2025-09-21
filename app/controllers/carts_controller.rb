@@ -12,7 +12,8 @@ class CartsController < ApplicationController
 
   # GET /cart
   def show
-    # 
+    result = cart_service.get_current_cart(session)
+    handle_result(result)
   end
 
   # POST /cart/add_item

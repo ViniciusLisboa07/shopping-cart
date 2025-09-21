@@ -4,6 +4,7 @@ class CartService
   class CartNotFoundError < StandardError; end
   class ProductNotFoundError < StandardError; end
   class ProductNotInCartError < StandardError; end
+
   def add_product_to_cart(session, product_id, quantity)
     product = find_product!(product_id)
     cart = find_or_create_cart(session)
@@ -11,6 +12,14 @@ class CartService
     add_or_update_cart_item(cart, product, quantity)
     
     cart.reload
+    Result.success(cart)
+  rescue => error
+    Result.failure(error)
+  end
+
+
+  def get_current_cart(session)
+    cart = find_current_cart(session)
     Result.success(cart)
   rescue => error
     Result.failure(error)
