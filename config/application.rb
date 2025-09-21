@@ -24,6 +24,10 @@ module Store
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Add services and serializers to autoload paths
+    config.autoload_paths += %W(#{config.root}/app/services #{config.root}/app/serializers)
+    config.eager_load_paths += %W(#{config.root}/app/services #{config.root}/app/serializers)
+
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
