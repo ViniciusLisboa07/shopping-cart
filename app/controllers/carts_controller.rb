@@ -27,11 +27,14 @@ class CartsController < ApplicationController
     handle_result(result)
   end
 
-  # DELETE /cart/:product_id
   def remove_product
-    # todo
-  end
+    result = cart_service.remove_product_from_cart(
+      session,
+      params[:product_id]
+    )
 
+    handle_result(result)
+  end
   private
 
   def handle_result(result)
@@ -49,6 +52,8 @@ class CartsController < ApplicationController
     when CartService::ProductNotFoundError
       render json: { error: error.message }, status: :not_found
     when CartService::CartNotFoundError
+      render json: { error: error.message }, status: :not_found
+    when CartService::EmptyCartError
       render json: { error: error.message }, status: :not_found
     else
       render json: { error: error.message }, status: :unprocessable_entity

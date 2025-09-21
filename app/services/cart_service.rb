@@ -4,6 +4,7 @@ class CartService
   class CartNotFoundError < StandardError; end
   class ProductNotFoundError < StandardError; end
   class InvalidQuantityError < StandardError; end
+  class EmptyCartError < StandardError; end
 
   def add_product_to_cart(session, product_id, quantity)
     product = find_product!(product_id)
@@ -33,6 +34,25 @@ class CartService
 
   def get_current_cart(session)
     cart = find_current_cart(session)
+    Result.success(cart)
+  rescue => error
+    Result.failure(error)
+  end
+
+  def remove_product_from_cart(session, product_id)
+    product = find_product!(product_id)
+    cart = find_current_cart(session)
+
+    raise CartNotFoundError, 'Cart not found' unless cart
+
+    raise EmptyCartError, 'Cart is empty' if cart.empty?
+
+    cart_item = cart.cart_items.find_by(product: product)
+    raise ProductNotFoundError, 'Product not found in cart' unless cart_item
+
+    cart_item.destroy!
+    cart.reload
+    
     Result.success(cart)
   rescue => error
     Result.failure(error)

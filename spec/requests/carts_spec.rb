@@ -132,6 +132,75 @@ RSpec.describe "/carts", type: :request do
   end
 
   describe "DELETE /cart/:product_id" do
-    # todo
+    before do
+      post '/cart', params: { product_id: product1.id, quantity: 2 }, as: :json
+      post '/cart', params: { product_id: product2.id, quantity: 1 }, as: :json
+    end
+
+    context "when removing existing product" do
+      it "removes the product from cart" do
+        delete "/cart/#{product1.id}", as: :json
+        
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response["products"].size).to eq(1)
+        expect(json_response["products"].first["id"]).to eq(product2.id)
+        expect(json_response["total_price"]).to eq("799.99")
+      end
+
+      it "returns empty cart when removing last product" do
+        delete "/cart/#{product1.id}", as: :json
+        delete "/cart/#{product2.id}", as: :json
+        
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response["products"]).to be_empty
+        expect(json_response["total_price"]).to eq("0.0")
+      end
+    end
+
+    context "when cart doesn't exist" do
+      it "returns cart not found error" do
+        integration_session = open_session
+        integration_session.host! 'localhost:3000'
+        
+        integration_session.delete "/cart/#{product1.id}", as: :json
+        
+        expect(integration_session.response).to have_http_status(:not_found)
+        expect(JSON.parse(integration_session.response.body)["error"]).to eq("Cart not found")
+      end
+    end
+
+    context "when product is not in cart" do
+      it "returns product not found in cart error" do
+        other_product = create(:product, name: "Other Product", price: 100.0)
+        
+        delete "/cart/#{other_product.id}", as: :json
+        
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)["error"]).to eq("Product not found in cart")
+      end
+    end
+
+    context "when product doesn't exist" do
+      it "returns product not found error" do
+        delete "/cart/99999", as: :json
+        
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)["error"]).to eq("Product not found")
+      end
+    end
+
+    context "when cart is empty" do
+      it "returns cart empty error" do
+        delete "/cart/#{product1.id}", as: :json
+        delete "/cart/#{product2.id}", as: :json
+
+        delete "/cart/#{product1.id}", as: :json
+        
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)["error"]).to eq("Cart is empty")
+      end
+    end
   end
 end

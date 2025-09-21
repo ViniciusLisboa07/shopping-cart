@@ -29,6 +29,10 @@ class Cart < ApplicationRecord
     update_column(:total_price, calculate_total_price)
   end
 
+  def empty?
+    cart_items.empty?
+  end
+
   private
 
   def calculate_total_price
