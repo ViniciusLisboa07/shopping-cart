@@ -7,3 +7,10 @@
   - mailers
   - active_storage_analysis
   - active_storage_purge
+
+# Scheduled jobs configuration
+:scheduler:
+  mark_carts_as_abandoned:
+    every: '1h'  # Executa a cada hora para verificar carrinhos inativos
+    class: MarkCartAsAbandonedJob
+    description: "Mark inactive carts as abandoned (3h) and remove old abandoned carts (7 days)"
