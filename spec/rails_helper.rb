@@ -65,4 +65,9 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  # Configure host for all request specs
+  config.before(:each, type: :request) do
+    host! 'localhost:3000'
+  end
 end

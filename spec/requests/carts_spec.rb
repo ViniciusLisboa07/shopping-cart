@@ -4,9 +4,6 @@ RSpec.describe "/carts", type: :request do
   let!(:product1) { create(:product, name: "iPhone 15", price: 999.99) }
   let!(:product2) { create(:product, name: "Samsung Galaxy", price: 799.99) }
 
-  before do
-    host! 'localhost:3000'
-  end
 
   describe "POST /cart" do
     context "when adding a product to cart" do
@@ -159,18 +156,6 @@ RSpec.describe "/carts", type: :request do
       end
     end
 
-    context "when cart doesn't exist" do
-      it "returns cart not found error" do
-        integration_session = open_session
-        integration_session.host! 'localhost:3000'
-        
-        integration_session.delete "/cart/#{product1.id}", as: :json
-        
-        expect(integration_session.response).to have_http_status(:not_found)
-        expect(JSON.parse(integration_session.response.body)["error"]).to eq("Cart not found")
-      end
-    end
-
     context "when product is not in cart" do
       it "returns product not found in cart error" do
         other_product = create(:product, name: "Other Product", price: 100.0)
@@ -200,6 +185,18 @@ RSpec.describe "/carts", type: :request do
         
         expect(response).to have_http_status(:not_found)
         expect(JSON.parse(response.body)["error"]).to eq("Cart is empty")
+      end
+    end
+
+  end
+
+  describe "DELETE /cart/:product_id - No Cart Scenario" do
+    context "when cart doesn't exist" do
+      it "returns cart not found error" do
+        delete "/cart/#{product1.id}", as: :json
+        
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)["error"]).to eq("Cart not found")
       end
     end
   end

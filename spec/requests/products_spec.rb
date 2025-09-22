@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "/products", type: :request do
+
   let(:valid_attributes) {
     {
       name: 'A product',
