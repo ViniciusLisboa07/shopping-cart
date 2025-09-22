@@ -7,6 +7,9 @@ class Cart < ApplicationRecord
   before_save :update_interaction_time
   after_save :recalculate_total_price
 
+  scope :inactive, -> { where('last_interaction_at <= ? AND abandoned_at IS NULL', 3.hours.ago) }
+  scope :old_abandoned, -> { where('abandoned_at IS NOT NULL AND abandoned_at <= ?', 7.days.ago) }
+
   def abandoned?
     abandoned_at.present?
   end
@@ -16,7 +19,7 @@ class Cart < ApplicationRecord
   end
 
   def remove_if_abandoned
-    if abandoned?
+    if abandoned? && abandoned_at <= 7.days.ago
       destroy
     end
   end
@@ -47,6 +50,9 @@ class Cart < ApplicationRecord
   end
 
   def update_interaction_time
-    self.last_interaction_at = Time.current
+    # Only update if it's a new record or last_interaction_at is not set
+    if new_record? || last_interaction_at.nil?
+      self.last_interaction_at = Time.current
+    end
   end
 end
