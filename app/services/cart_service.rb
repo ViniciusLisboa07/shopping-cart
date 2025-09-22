@@ -7,6 +7,8 @@ class CartService
   class EmptyCartError < StandardError; end
 
   def add_product_to_cart(session, product_id, quantity)
+    validate_quantity!(quantity)
+    
     product = find_product!(product_id)
     cart = find_or_create_cart(session)
     
@@ -51,8 +53,9 @@ class CartService
     raise ProductNotFoundError, 'Product not found in cart' unless cart_item
 
     cart_item.destroy!
+    cart.touch(:last_interaction_at)
     cart.reload
-    
+
     Result.success(cart)
   rescue => error
     Result.failure(error)
