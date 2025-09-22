@@ -1,37 +1,24 @@
 # frozen_string_literal: true
 
 class CartService
+  MINIMUM_QUANTITY = 1
+  DEFAULT_CART_TOTAL = 0.0
+  
   class CartNotFoundError < StandardError; end
   class ProductNotFoundError < StandardError; end
   class InvalidQuantityError < StandardError; end
   class EmptyCartError < StandardError; end
 
   def add_product_to_cart(session, product_id, quantity)
-    validate_quantity!(quantity)
-    
-    product = find_product!(product_id)
-    cart = find_or_create_cart(session)
-    
-    add_or_update_cart_item(cart, product, quantity)
-    
-    cart.reload
-    Result.success(cart)
-  rescue => error
-    Result.failure(error)
+    execute_cart_operation(session, product_id, quantity) do |cart, product, qty|
+      add_or_update_cart_item(cart, product, qty)
+    end
   end
 
   def update_product_quantity(session, product_id, quantity)
-    validate_quantity!(quantity)
-
-    product = find_product!(product_id)
-    cart = find_or_create_cart(session)
-    
-    set_cart_item_quantity(cart, product, quantity)
-    
-    cart.reload
-    Result.success(cart)
-  rescue => error
-    Result.failure(error)
+    execute_cart_operation(session, product_id, quantity) do |cart, product, qty|
+      set_cart_item_quantity(cart, product, qty)
+    end
   end
 
   def get_current_cart(session)
@@ -63,6 +50,20 @@ class CartService
 
   private
 
+  def execute_cart_operation(session, product_id, quantity)
+    validate_quantity!(quantity)
+    
+    product = find_product!(product_id)
+    cart = find_or_create_cart(session)
+    
+    yield(cart, product, quantity)
+    
+    cart.reload
+    Result.success(cart)
+  rescue => error
+    Result.failure(error)
+  end
+
   def find_product!(product_id)
     Product.find(product_id)
   rescue ActiveRecord::RecordNotFound
@@ -74,7 +75,7 @@ class CartService
     return cart if cart
 
     cart = Cart.create!(
-      total_price: 0.0,
+      total_price: DEFAULT_CART_TOTAL,
       last_interaction_at: Time.current
     )
     
@@ -100,21 +101,32 @@ class CartService
   end
 
   def validate_quantity!(quantity)
-    raise InvalidQuantityError, 'Quantity must be greater than 0' if quantity <= 0
+    if quantity < MINIMUM_QUANTITY
+      raise InvalidQuantityError, "Quantity must be greater than 0"
+    end
   end
 
   def set_cart_item_quantity(cart, product, quantity)
     existing_item = cart.cart_items.find_or_create_by(product: product)
-
     new_quantity = existing_item.quantity + quantity
 
-    if new_quantity <= 0
-      if existing_item.persisted?
-        existing_item.destroy!
-      end
+    if should_remove_item?(new_quantity)
+      remove_cart_item_if_persisted(existing_item)
     else
-      existing_item.update!(quantity: new_quantity)
+      update_cart_item_quantity(existing_item, new_quantity)
     end
+  end
+
+  def should_remove_item?(quantity)
+    quantity <= 0
+  end
+
+  def remove_cart_item_if_persisted(item)
+    item.destroy! if item.persisted?
+  end
+
+  def update_cart_item_quantity(item, quantity)
+    item.update!(quantity: quantity)
   end
 
   def session_manager

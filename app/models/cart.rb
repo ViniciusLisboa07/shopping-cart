@@ -2,13 +2,17 @@ class Cart < ApplicationRecord
   has_many :cart_items, dependent: :destroy
   has_many :products, through: :cart_items
 
+  ABANDONMENT_THRESHOLD = 3.hours
+  REMOVAL_THRESHOLD = 7.days
+  MINIMUM_TOTAL_PRICE = 0.0
+
   validates_numericality_of :total_price, greater_than_or_equal_to: 0
 
   before_save :update_interaction_time
   after_save :recalculate_total_price
 
-  scope :inactive, -> { where('last_interaction_at <= ? AND abandoned_at IS NULL', 3.hours.ago) }
-  scope :old_abandoned, -> { where('abandoned_at IS NOT NULL AND abandoned_at <= ?', 7.days.ago) }
+  scope :inactive, -> { where('last_interaction_at <= ? AND abandoned_at IS NULL', ABANDONMENT_THRESHOLD.ago) }
+  scope :old_abandoned, -> { where('abandoned_at IS NOT NULL AND abandoned_at <= ?', REMOVAL_THRESHOLD.ago) }
 
   def abandoned?
     abandoned_at.present?
@@ -19,13 +23,17 @@ class Cart < ApplicationRecord
   end
 
   def remove_if_abandoned
-    if abandoned? && abandoned_at <= 7.days.ago
+    if should_be_removed?
       destroy
     end
   end
 
   def inactive?
-    last_interaction_at.present? && last_interaction_at <= 3.hours.ago
+    last_interaction_at.present? && last_interaction_at <= ABANDONMENT_THRESHOLD.ago
+  end
+
+  def should_be_removed?
+    abandoned? && abandoned_at <= REMOVAL_THRESHOLD.ago
   end
 
   def recalculate_total!
@@ -50,7 +58,6 @@ class Cart < ApplicationRecord
   end
 
   def update_interaction_time
-    # Only update if it's a new record or last_interaction_at is not set
     if new_record? || last_interaction_at.nil?
       self.last_interaction_at = Time.current
     end

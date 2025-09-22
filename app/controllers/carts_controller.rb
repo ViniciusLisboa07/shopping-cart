@@ -48,15 +48,16 @@ class CartsController < ApplicationController
   end
 
   def handle_error(error)
+    status = error_status_code(error)
+    render json: { error: error.message }, status: status
+  end
+
+  def error_status_code(error)
     case error
-    when CartService::ProductNotFoundError
-      render json: { error: error.message }, status: :not_found
-    when CartService::CartNotFoundError
-      render json: { error: error.message }, status: :not_found
-    when CartService::EmptyCartError
-      render json: { error: error.message }, status: :not_found
+    when CartService::ProductNotFoundError, CartService::CartNotFoundError, CartService::EmptyCartError
+      :not_found
     else
-      render json: { error: error.message }, status: :unprocessable_entity
+      :unprocessable_entity
     end
   end
 
