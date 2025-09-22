@@ -44,9 +44,64 @@ A aplicação estará disponível em: http://localhost:3000
 make test-setup
 ```
 
-## Serviços
+## Executando Testes
 
-- **Web**: Aplicação Rails (porta 3000)
-- **DB**: PostgreSQL (porta 5432)
-- **Redis**: Cache e jobs (porta 6379)
-- **Sidekiq**: Processamento de jobs em background
+```bash
+make run-tests
+# ou
+docker compose run test bundle exec rspec
+```
+
+## API Endpoints
+
+### 🛒 Carrinho de Compras
+
+#### 1. Adicionar produto ao carrinho
+```http
+POST /cart
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "quantity": 2
+}
+```
+
+#### 2. Visualizar carrinho atual
+```http
+GET /cart
+```
+
+#### 3. Alterar quantidade de produto
+```http
+POST /cart/add_item
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "quantity": 1
+}
+```
+
+#### 4. Remover produto do carrinho
+```http
+DELETE /cart/:product_id
+```
+## Estrutura do Projeto
+
+```
+app/
+├── controllers/          # Controladores da API
+├── models/              # Modelos ActiveRecord
+├── services/            # Lógica de negócio
+├── serializers/         # Serialização JSON
+├── sidekiq/             # Jobs em background
+└── jobs/                # Jobs do Rails
+
+spec/
+├── factories/           # Factories para testes
+├── services/            # Testes dos services
+├── models/              # Testes dos models
+├── requests/            # Testes de API
+└── sidekiq/             # Testes dos jobs
+```
