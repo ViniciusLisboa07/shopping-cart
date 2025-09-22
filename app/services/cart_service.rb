@@ -108,7 +108,13 @@ class CartService
 
     new_quantity = existing_item.quantity + quantity
 
-    existing_item.update!(quantity: new_quantity)
+    if new_quantity <= 0
+      if existing_item.persisted?
+        existing_item.destroy!
+      end
+    else
+      existing_item.update!(quantity: new_quantity)
+    end
   end
 
   def session_manager
